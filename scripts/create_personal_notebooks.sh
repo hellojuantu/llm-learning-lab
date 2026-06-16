@@ -21,12 +21,12 @@ done
 cat > "$DST_DIR/README.md" <<'EOF'
 # Personal Notebooks
 
-这个目录放个人学习记录，不会提交到 git。
+This directory is for personal study notes and is ignored by git.
 
-学习方式：
+How to use:
 
-1. 从这里打开 `*.barry.ipynb`
-2. 随便写笔记、运行 cell、改答案
-3. 对外分享时，分享 `micrograd/playground/` 里的干净课程版
+1. Open `*.barry.ipynb` from this directory.
+2. Write notes, run cells, and edit answers freely.
+3. When sharing with others, share the clean course version in `micrograd/playground/`.
 
 EOF
