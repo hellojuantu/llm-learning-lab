@@ -21,6 +21,12 @@ env/
 # Jupyter
 .ipynb_checkpoints/
 
+# Personal study notes
+micrograd/personal/
+*.barry.ipynb
+*.local.ipynb
+*_scratch.ipynb
+
 # IDE / OS
 .idea/
 .vscode/
