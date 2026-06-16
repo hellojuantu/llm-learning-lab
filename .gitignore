@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Local data and model artifacts
+data/
+datasets/
+artifacts/
+checkpoints/
+models/
+runs/
+wandb/
+*.ckpt
+*.pt
+*.pth
+*.onnx
+
+# Local backups
+.micrograd-upstream-git-backup/
