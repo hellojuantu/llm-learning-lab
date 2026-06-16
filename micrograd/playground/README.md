@@ -213,10 +213,21 @@ backward() 先拓扑排序，再倒序调用 _backward
 
 把 `Value` 接到神经网络结构。
 
+这一节开头先补最小够用的线性代数：
+
+```text
+数学里的 [] = 向量/矩阵的排版符号
+Python 里的 [] = list 容器，里面装一组对象
+向量 = 一排数，比如输入 x 和权重 w
+点积 = 对应位置相乘再相加
+bias = 最后额外加上的一个可学习标量
+Layer = 很多个神经元，也就是很多个点积并排算
+```
+
 你要带走：
 
 ```text
-Neuron = w*x + b + ReLU
+Neuron = 点积 w*x + b + ReLU
 Layer = 多个 Neuron
 MLP = 多个 Layer
 参数 = w 和 b，它们也是 Value
@@ -225,6 +236,8 @@ MLP = 多个 Layer
 过关标准：
 
 ```text
+能区分数学里的 [x1, x2] 和 Python 里的 x = [x1, x2]。
+能解释 sum((wi*xi for wi,xi in zip(w, x)), b) 为什么是 w*x+b。
 能算出 MLP(2, [3, 1]) 为什么有 13 个参数。
 ```
 
