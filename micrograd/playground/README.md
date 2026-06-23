@@ -66,6 +66,7 @@ micrograd/playground/
 00-03：class/讲义课，负责补关键概念和源码理解
 01、04：homework/作业课，负责大量手算和完整 TinyValue 实现
 05-06：pro/小项目课，把 Value 接到 MLP，再跑通训练闭环
+07-10：进阶连接课，把训练闭环扩展到分类、PyTorch 对照、调试和小项目答辩
 每节末尾：知识清单，用来判断能不能进入下一节
 ```
 
@@ -98,6 +99,10 @@ qa_check('ex1', your_a_grad, your_b_grad)
 04：TinyValue 完整实现作业课
 05：Neuron / MLP 结构理解课，带少量小测
 06：训练循环理解课，带少量小测
+07：分类和 decision boundary 直觉课，带可视化
+08：micrograd 到 PyTorch 的概念对照课
+09：梯度调试课
+10：mini project 收尾课
 ```
 
 所以 `03` 和 `04` 不重复：
@@ -227,6 +232,7 @@ Layer = 很多个神经元，也就是很多个点积并排算
 你要带走：
 
 ```text
+Neuron(n) = 接收 n 个输入，产生 1 个输出
 Neuron = 点积 w*x + b + ReLU
 Layer = 多个 Neuron
 MLP = 多个 Layer
@@ -236,6 +242,7 @@ MLP = 多个 Layer
 过关标准：
 
 ```text
+能解释 Neuron(2) 为什么是 2 个输入、1 个输出、3 个参数。
 能区分数学里的 [x1, x2] 和 Python 里的 x = [x1, x2]。
 能解释 sum((wi*xi for wi,xi in zip(w, x)), b) 为什么是 w*x+b。
 能算出 MLP(2, [3, 1]) 为什么有 13 个参数。
@@ -261,6 +268,93 @@ p.data += -learning_rate * p.grad 更新参数
 ```text
 能解释为什么更新方向是 -grad，以及 learning_rate 控制每步走多大。
 ```
+
+### 07 - `07_classification_boundary.ipynb`
+
+把训练循环用到二分类任务上。
+
+你要带走：
+
+```text
+score > 0 预测 +1，score < 0 预测 -1
+margin = y * score
+hinge loss = max(0, 1 - margin)
+decision boundary = score 等于 0 的位置
+```
+
+过关标准：
+
+```text
+能解释为什么 (1 - y * score).relu() 可以作为分类 loss。
+能看懂图里的 decision boundary。
+```
+
+### 08 - `08_pytorch_bridge.ipynb`
+
+把 micrograd 的概念翻译到 PyTorch。
+
+从这一节开始，**PyTorch 是必装依赖**，不是可选阅读。如果当前环境还没有 PyTorch，先安装再进入 08：
+
+```bash
+/Users/barry/IdeaProjects/llm/.venv/bin/python -m pip install torch
+```
+
+注意：装到 notebook 使用的 `.venv` 里，不要装到系统 Python。
+
+你要带走：
+
+```text
+Value 是标量版自动求导
+torch.Tensor 是张量版自动求导
+loss.backward() 两边含义一致
+zero_grad/backward/step 是 PyTorch 训练循环骨架
+```
+
+过关标准：
+
+```text
+能在当前环境成功 import torch。
+能用 w=2, x=3, y=7 的例子讲清 micrograd 和 PyTorch 的一步训练对应关系。
+```
+
+### 09 - `09_debugging_gradients.ipynb`
+
+专门练训练出问题时怎么排查。
+
+你要带走：
+
+```text
+重复 backward 会累加 grad
+忘记 zero_grad 会混入旧梯度
+learning_rate 太大可能震荡
+ReLU 负半轴会让 grad 变成 0
+```
+
+过关标准：
+
+```text
+看到 loss 不下降，能按 loss、grad、zero_grad、update、learning_rate 的顺序排查。
+```
+
+### 10 - `10_mini_project.ipynb`
+
+把整套 micrograd 学习收束成一个小项目。
+
+你要带走：
+
+```text
+数据 -> 模型 -> loss -> backward -> update -> accuracy -> 可视化 -> 复盘
+```
+
+过关标准：
+
+```text
+能像答辩一样解释 mini classifier 的每一步，并说出如果训练失败先查什么。
+```
+
+## micrograd 之后怎么办
+
+这套 notebook 只负责把 micrograd 主线讲透。更长期的学习路线放在外层 [README.md](../README.md) 的 `Learning Roadmap: From micrograd To LLM` 里，后面慢慢学、慢慢加。
 
 ## 每节后的 AI 复盘
 

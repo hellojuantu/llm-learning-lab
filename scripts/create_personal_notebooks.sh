@@ -29,4 +29,11 @@ How to use:
 2. Write notes, run cells, and edit answers freely.
 3. When sharing with others, share the clean course version in `micrograd/playground/`.
 
+Study note:
+
+- `05_neuron_and_mlp.barry.ipynb` starts with a small linear algebra warm-up before Neuron / Layer / MLP: vector, dot product, bias, and why `sum(wi*xi) + b` is the neuron formula.
+- It also includes a sketch for separating math brackets from Python lists: math `[]` shows vector/matrix shape, while Python `[]` stores objects.
+- `07_classification_boundary.barry.ipynb` through `10_mini_project.barry.ipynb` extend the course after the basic training loop: classification, required PyTorch bridge, gradient debugging, and a final mini project.
+- `08_pytorch_bridge.barry.ipynb` requires PyTorch. Install it before starting that notebook.
+
 EOF
