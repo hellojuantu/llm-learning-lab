@@ -85,6 +85,40 @@ def audit_homework_shape() -> list[str]:
     return errors
 
 
+def audit_notebook_answer_hiding() -> list[str]:
+    errors: list[str] = []
+    forbidden = ["def qa_check_", "`assert ", "### qa_check"]
+    for path in course_notebooks():
+        source = notebook_source(path)
+        for marker in forbidden:
+            if marker in source:
+                errors.append(f"{path.relative_to(ROOT)}: visible answer/check marker {marker!r}")
+    return errors
+
+
+def audit_per_exercise_support() -> list[str]:
+    errors: list[str] = []
+    for path in course_notebooks():
+        nb = read_notebook(path)
+        cells = nb.get("cells", [])
+        for index, cell in enumerate(cells):
+            if cell.get("cell_type") != "code":
+                continue
+            source = cell_source(cell)
+            if "qa_check(" not in source:
+                continue
+            following = "\n".join(
+                cell_source(next_cell)
+                for next_cell in cells[index + 1:index + 4]
+                if next_cell.get("cell_type") == "markdown"
+            )
+            if "Show / Hide 本题提示" not in following:
+                errors.append(f"{path.relative_to(ROOT)}: cell {index + 1} missing per-exercise hint")
+            if "Show / Hide 本题答案" not in following:
+                errors.append(f"{path.relative_to(ROOT)}: cell {index + 1} missing per-exercise answer")
+    return errors
+
+
 def audit_class_shape() -> list[str]:
     errors: list[str] = []
     for lesson in lesson_dirs():
@@ -142,6 +176,8 @@ def main() -> int:
     checks = {
         "structure": audit_structure(),
         "notebook_json": audit_notebook_json(),
+        "answer_hiding": audit_notebook_answer_hiding(),
+        "per_exercise_support": audit_per_exercise_support(),
         "class_shape": audit_class_shape(),
         "homework_shape": audit_homework_shape(),
         "blank_execution": audit_blank_execution(),
