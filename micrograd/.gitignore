@@ -1,1 +1,6 @@
 .ipynb_checkpoints/
+__pycache__/
+*.pyc
+course/**/classification_boundary.svg
+course/**/class_07_boundary.svg
+course/**/mini_project_points.svg

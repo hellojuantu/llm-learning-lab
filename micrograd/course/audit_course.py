@@ -119,6 +119,42 @@ def audit_per_exercise_support() -> list[str]:
     return errors
 
 
+def audit_homework_ladder_order() -> list[str]:
+    errors: list[str] = []
+    for lesson in lesson_dirs():
+        path = lesson / "homework.ipynb"
+        nb = read_notebook(path)
+        first_example = None
+        first_modify = None
+        for index, cell in enumerate(nb.get("cells", []), start=1):
+            if cell.get("cell_type") != "markdown":
+                continue
+            first_line = (cell_source(cell).splitlines() or [""])[0]
+            if first_example is None and first_line.startswith("## 完整例子"):
+                first_example = index
+            if first_modify is None and first_line.startswith("## Modify"):
+                first_modify = index
+        if first_example is None:
+            errors.append(f"{path.relative_to(ROOT)}: missing worked example section")
+        if first_modify is not None and first_example is not None and first_modify < first_example:
+            errors.append(f"{path.relative_to(ROOT)}: Modify appears before worked example")
+    return errors
+
+
+def audit_contextual_hints() -> list[str]:
+    errors: list[str] = []
+    generic_fragments = [
+        "先参考上面的完整例子，只改 TODO 处",
+        "测试失败时，先判断错在数学、Python、计算图还是训练循环",
+    ]
+    for path in course_notebooks():
+        source = notebook_source(path)
+        for fragment in generic_fragments:
+            if fragment in source:
+                errors.append(f"{path.relative_to(ROOT)}: generic hint remains")
+    return errors
+
+
 def audit_visual_feedback() -> list[str]:
     errors: list[str] = []
     for path in course_notebooks():
@@ -184,6 +220,10 @@ def audit_blank_execution() -> list[str]:
             os.chdir(old_cwd)
     for generated in COURSE.glob("*/*.svg"):
         generated.unlink()
+    for pycache in COURSE.rglob("__pycache__"):
+        for child in pycache.iterdir():
+            child.unlink()
+        pycache.rmdir()
     return errors
 
 
@@ -193,6 +233,8 @@ def main() -> int:
         "notebook_json": audit_notebook_json(),
         "answer_hiding": audit_notebook_answer_hiding(),
         "per_exercise_support": audit_per_exercise_support(),
+        "homework_ladder_order": audit_homework_ladder_order(),
+        "contextual_hints": audit_contextual_hints(),
         "visual_feedback": audit_visual_feedback(),
         "class_shape": audit_class_shape(),
         "homework_shape": audit_homework_shape(),
