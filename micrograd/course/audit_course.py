@@ -119,6 +119,21 @@ def audit_per_exercise_support() -> list[str]:
     return errors
 
 
+def audit_visual_feedback() -> list[str]:
+    errors: list[str] = []
+    for path in course_notebooks():
+        nb = read_notebook(path)
+        for index, cell in enumerate(nb.get("cells", []), start=1):
+            if cell.get("cell_type") != "code":
+                continue
+            source = cell_source(cell)
+            writes_svg = ".svg" in source and "write_text" in source
+            shows_svg = "show_svg(" in source or "display(SVG" in source
+            if writes_svg and not shows_svg:
+                errors.append(f"{path.relative_to(ROOT)}: cell {index} writes svg without displaying it")
+    return errors
+
+
 def audit_class_shape() -> list[str]:
     errors: list[str] = []
     for lesson in lesson_dirs():
@@ -178,6 +193,7 @@ def main() -> int:
         "notebook_json": audit_notebook_json(),
         "answer_hiding": audit_notebook_answer_hiding(),
         "per_exercise_support": audit_per_exercise_support(),
+        "visual_feedback": audit_visual_feedback(),
         "class_shape": audit_class_shape(),
         "homework_shape": audit_homework_shape(),
         "blank_execution": audit_blank_execution(),
