@@ -9,6 +9,59 @@ A tiny Autograd engine (with a bite! :)). Implements backpropagation (reverse-mo
 
 这不是一次性啃完的资源清单，而是后面慢慢学、慢慢加的升级路线。每走完一段，都要留下一个能跑的代码结果和一篇过关笔记。
 
+## Micrograd Course Design Contract
+
+这个仓库里的学习材料按“萧井陌 / Badger + 吴恩达”方式重新设计：不是先堆理论，也不是只跑现成 demo，而是让每一节都变成一个能练、能测、能复盘的学习工件。
+
+真正的 full course 入口是 [course/START_HERE.ipynb](course/START_HERE.ipynb)，导航见 [course/README.md](course/README.md)。每一节都是一个文件夹，包含：
+
+```text
+preview.ipynb    课前预习作业，打开就能填 TODO 跑检查
+class.ipynb      上课板书/实验，先跑代码再拆概念
+homework.ipynb   正式编号作业、测试、Debug Lab、项目题
+review_prompt.md AI 复盘检查
+```
+
+旧的 v1 quick labs 已退休；`course/` 是当前唯一主课程入口，不再把一节课压成一个文件，也不再用纯 Markdown 冒充代码课程。
+
+每本课程 notebook 必须满足这条链路：
+
+```text
+课前预习作业
+-> 上课讲义/实验
+-> 编号作业梯度
+-> TODO 骨架
+-> qa_check 测试
+-> Debug Lab
+-> Show / Hide 提示和答案
+-> 课后提交清单
+-> AI 复盘检查
+```
+
+这里的“作业梯度”不是标题，而是具体动作：
+
+```text
+作业 1：照例子做一个最小版本
+作业 2：参考作业 1，只改一个条件或数字
+作业 3：继续复用前面的规则，处理边界或反例
+Debug Lab：故意看一个常见错误，判断错在数学、Python、计算图还是训练循环
+qa_check：空白时温和提示，填错时明确指出问题
+```
+
+当前反向审计标准：
+
+```text
+每本 homework notebook 都必须有完整例子
+每本 class notebook 都必须有 Predict / Run / Modify
+编号作业覆盖本节关键理解台阶
+必须显式复用上一题或前面规则
+必须有 Debug Lab / 调试题
+必须有 qa_check
+必须分开 Show / Hide 提示 和 Show / Hide 答案
+```
+
+截至 2026-06-25，`course/00-11` 已按“每节一个文件夹、多个可运行 notebook”的形态落地。每节的正式练习入口是 `preview.ipynb -> class.ipynb -> homework.ipynb -> review_prompt.md`。
+
 推荐顺序：
 
 ```text
