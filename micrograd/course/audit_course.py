@@ -170,6 +170,47 @@ def audit_visual_feedback() -> list[str]:
     return errors
 
 
+REVIEW_REQUIRED_KEYWORDS = {
+    "00_math_bootcamp": ["导数", "偏导", "梯度", "链式法则", "ReLU"],
+    "01_gradient_homework": ["局部导数", "多路径", "L=a*a", "ReLU"],
+    "02_value_usage": ["data", "grad", "backward", "重复"],
+    "03_value_source_reading": ["self", "other", "out", "_backward", "拓扑"],
+    "04_tinyvalue_homework": ["__add__", "__mul__", "__pow__", "relu", "build_topo"],
+    "05_neuron_mlp": ["Neuron", "Layer", "MLP", "参数", "bias"],
+    "06_training_loop": ["forward", "loss", "zero_grad", "backward", "update"],
+    "07_classification_boundary": ["score", "y * score", "margin", "hinge loss", "边界"],
+    "08_pytorch_bridge": ["Tensor", "requires_grad", "zero_grad", "optimizer.step", "shape"],
+    "09_gradient_debugging": ["loss", "grad", "learning_rate", "dead ReLU", "checklist"],
+    "10_mini_project": ["数据", "MLP(2,[4,1])", "accuracy", "decision boundary", "答辩"],
+    "11_structure_next_route": ["engine.py", "nn.py", "PyTorch", "D2L", "nanoGPT"],
+}
+
+
+def audit_review_prompts() -> list[str]:
+    errors: list[str] = []
+    generic_fragments = [
+        "请重点检查：",
+        "我是否真的理解了每个作业台阶",
+        "我是否理解 Debug Lab 的错误原因",
+        "我是否能把本节接到 micrograd 主线",
+    ]
+    for lesson in lesson_dirs():
+        path = lesson / "review_prompt.md"
+        text = path.read_text(encoding="utf-8")
+        for fragment in generic_fragments:
+            if fragment in text:
+                errors.append(f"{path.relative_to(ROOT)}: generic review fragment remains")
+        if "请按这个顺序检查我：" not in text:
+            errors.append(f"{path.relative_to(ROOT)}: missing ordered review questions")
+        question_count = sum(1 for line in text.splitlines() if line[:1].isdigit() and ". " in line)
+        if question_count < 7:
+            errors.append(f"{path.relative_to(ROOT)}: too few review questions ({question_count})")
+        for keyword in REVIEW_REQUIRED_KEYWORDS.get(lesson.name, []):
+            if keyword not in text:
+                errors.append(f"{path.relative_to(ROOT)}: missing lesson keyword {keyword!r}")
+    return errors
+
+
 def audit_class_shape() -> list[str]:
     errors: list[str] = []
     for lesson in lesson_dirs():
@@ -236,6 +277,7 @@ def main() -> int:
         "homework_ladder_order": audit_homework_ladder_order(),
         "contextual_hints": audit_contextual_hints(),
         "visual_feedback": audit_visual_feedback(),
+        "review_prompts": audit_review_prompts(),
         "class_shape": audit_class_shape(),
         "homework_shape": audit_homework_shape(),
         "blank_execution": audit_blank_execution(),
