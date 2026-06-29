@@ -122,6 +122,19 @@ def audit_per_exercise_support() -> list[str]:
     return errors
 
 
+def audit_qa_instruction_comments() -> list[str]:
+    errors: list[str] = []
+    for path in course_notebooks():
+        nb = read_notebook(path)
+        for index, cell in enumerate(nb.get("cells", []), start=1):
+            if cell.get("cell_type") != "code":
+                continue
+            source = cell_source(cell)
+            if "qa_check(" in source and "# 填写说明：" not in source:
+                errors.append(f"{path.relative_to(ROOT)}: cell {index} missing fill instructions")
+    return errors
+
+
 def audit_homework_ladder_order() -> list[str]:
     errors: list[str] = []
     for lesson in lesson_dirs():
@@ -309,6 +322,7 @@ def main() -> int:
         "notebook_json": audit_notebook_json(),
         "answer_hiding": audit_notebook_answer_hiding(),
         "per_exercise_support": audit_per_exercise_support(),
+        "qa_instruction_comments": audit_qa_instruction_comments(),
         "homework_ladder_order": audit_homework_ladder_order(),
         "contextual_hints": audit_contextual_hints(),
         "visual_feedback": audit_visual_feedback(),
