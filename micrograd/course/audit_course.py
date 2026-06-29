@@ -36,6 +36,9 @@ CLASS_MARKERS = {
     "qa_check": ["qa_check"],
 }
 
+CLASS_MIN_CELLS = 18
+CLASS_MIN_CHARS = 3500
+
 
 def read_notebook(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -222,6 +225,32 @@ def audit_class_shape() -> list[str]:
     return errors
 
 
+def audit_class_depth() -> list[str]:
+    errors: list[str] = []
+    for lesson in lesson_dirs():
+        path = lesson / "class.ipynb"
+        nb = read_notebook(path)
+        source = notebook_source(path)
+        if len(nb.get("cells", [])) < CLASS_MIN_CELLS:
+            errors.append(
+                f"{lesson.name}/class.ipynb: too few cells ({len(nb.get('cells', []))})"
+            )
+        if len(source) < CLASS_MIN_CHARS:
+            errors.append(f"{lesson.name}/class.ipynb: too short ({len(source)} chars)")
+        if "What To Remember" not in source:
+            errors.append(f"{lesson.name}/class.ipynb: missing What To Remember")
+        if "课堂检查" not in source:
+            errors.append(f"{lesson.name}/class.ipynb: missing classroom check section")
+    return errors
+
+
+def audit_no_checkpoints() -> list[str]:
+    errors: list[str] = []
+    for checkpoint in COURSE.rglob(".ipynb_checkpoints"):
+        errors.append(f"{checkpoint.relative_to(ROOT)} should not be committed")
+    return errors
+
+
 def audit_notebook_json() -> list[str]:
     errors: list[str] = []
     for path in course_notebooks():
@@ -246,6 +275,8 @@ def audit_blank_execution() -> list[str]:
 
     errors: list[str] = []
     old_cwd = Path.cwd()
+    old_backend = os.environ.get("MPLBACKEND")
+    os.environ["MPLBACKEND"] = "Agg"
     for path in course_notebooks():
         nb = read_notebook(path)
         namespace = {"__name__": "__main__"}
@@ -259,6 +290,10 @@ def audit_blank_execution() -> list[str]:
             errors.append(f"{path}: cell {index}: {type(exc).__name__}: {exc}")
         finally:
             os.chdir(old_cwd)
+    if old_backend is None:
+        os.environ.pop("MPLBACKEND", None)
+    else:
+        os.environ["MPLBACKEND"] = old_backend
     for generated in COURSE.glob("*/*.svg"):
         generated.unlink()
     for pycache in COURSE.rglob("__pycache__"):
@@ -279,7 +314,9 @@ def main() -> int:
         "visual_feedback": audit_visual_feedback(),
         "review_prompts": audit_review_prompts(),
         "class_shape": audit_class_shape(),
+        "class_depth": audit_class_depth(),
         "homework_shape": audit_homework_shape(),
+        "no_checkpoints": audit_no_checkpoints(),
         "blank_execution": audit_blank_execution(),
     }
     failed = False
