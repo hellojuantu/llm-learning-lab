@@ -13,4 +13,4 @@ fi
 cd "$ROOT_DIR"
 source "$VENV_DIR/bin/activate"
 
-exec python -m notebook
+exec "$VENV_DIR/bin/python" -m notebook
