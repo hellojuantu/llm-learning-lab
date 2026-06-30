@@ -1,4 +1,4 @@
-# AI 复盘检查 Prompt
+# 复盘检查 Prompt
 
 你是我的 micrograd 学习检查官。
 

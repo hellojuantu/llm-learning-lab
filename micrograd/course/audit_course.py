@@ -199,6 +199,11 @@ def audit_no_low_value_prompts() -> list[str]:
         re.compile(r"期望填"),
         re.compile(r"答案需要满足"),
         re.compile(r"概念映射"),
+        re.compile("可选" + "实际运行"),
+        re.compile("跳过 torch " + "运行"),
+        re.compile("AI " + "复盘"),
+        re.compile(chr(0x65E0) + chr(0x75DB) + "入口"),
+        re.compile("主" + "链路"),
     ]
     for path in course_notebooks():
         nb = read_notebook(path)
@@ -230,10 +235,10 @@ def audit_checks_feedback_architecture() -> list[str]:
         "student_value_to_torch",
         "student_zero_grad_reason",
         "student_fixed_update_line = None",
-        "_as_dict",
-        "_require_keys",
-        "请返回一个 dict",
-        "返回结果缺少 key",
+        "_as_" + "dict",
+        "_require_" + "keys",
+        "请返回一个 " + "dict",
+        "返回结果缺少 " + "key",
     ]
     for fragment in forbidden:
         if fragment in text:
@@ -345,6 +350,18 @@ def audit_notebook_json() -> list[str]:
     return errors
 
 
+def audit_notebook_outputs() -> list[str]:
+    errors: list[str] = []
+    for path in course_notebooks():
+        nb = read_notebook(path)
+        for index, cell in enumerate(nb.get("cells", []), start=1):
+            if cell.get("execution_count") is not None:
+                errors.append(f"{path.relative_to(ROOT)}: cell {index} has saved execution_count")
+            if cell.get("outputs"):
+                errors.append(f"{path.relative_to(ROOT)}: cell {index} has saved outputs")
+    return errors
+
+
 def audit_blank_execution() -> list[str]:
     """Execute course notebooks in blank TODO state.
 
@@ -382,6 +399,7 @@ def main() -> int:
     checks = {
         "structure": audit_structure(),
         "notebook_json": audit_notebook_json(),
+        "notebook_outputs": audit_notebook_outputs(),
         "answer_hiding": audit_notebook_answer_hiding(),
         "per_exercise_support": audit_per_exercise_support(),
         "qa_instruction_comments": audit_qa_instruction_comments(),

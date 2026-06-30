@@ -880,6 +880,34 @@ def qa_check_08_modify(ns: dict[str, Any]) -> None:
     print("OK: Modify 通过。")
 
 
+@check("qa_check_08_hand_then_run")
+def qa_check_08_hand_then_run(ns: dict[str, Any], fn: Callable[[], Any] | None = None) -> None:
+    manual_values = [
+        ns.get("student_manual_pred"),
+        ns.get("student_manual_loss"),
+        ns.get("student_manual_grad"),
+        ns.get("student_manual_updated_w"),
+    ]
+    if not todo_guard(manual_values):
+        return
+    expected = [6.0, 1.0, -6.0, 2.6]
+    names = ["manual pred", "manual loss", "manual grad", "manual updated w"]
+    for actual, expected_value, name in zip(manual_values, expected, names):
+        _assert_close(actual, expected_value, name, 1e-5)
+    if not _torch_available():
+        print("torch 未安装，先安装后再完成 PyTorch 验证。")
+        return
+    fn = fn or _student_fn(ns, "student_torch_hand_check")
+    if fn is None:
+        return
+    result = _as_tuple(_run(fn), 4)
+    if result is None:
+        return
+    for actual, expected_value, name in zip(result, expected, ["torch pred", "torch loss", "torch grad", "torch updated w"]):
+        _assert_close(actual, expected_value, name, 1e-5)
+    print("OK: 你先手算、再用 PyTorch 验证了一步训练。")
+
+
 @check("qa_check_08_debug")
 def qa_check_08_debug(ns: dict[str, Any]) -> None:
     if not _torch_available():
@@ -998,7 +1026,7 @@ def qa_check_preview_10(ns: dict[str, Any], order: Any) -> None:
     if not todo_guard([order]):
         return
     assert list(order) == ["forward", "loss", "backward", "update"]
-    print("OK: 项目主链路顺序通过。")
+    print("OK: 项目流程顺序通过。")
 
 
 @check("qa_check_class_10_predict")

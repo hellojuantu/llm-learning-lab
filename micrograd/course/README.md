@@ -1,54 +1,55 @@
-# micrograd Full Course v2
+# micrograd Course
 
-这是按小瓜/萧井陌课程形态重新设计的 micrograd full course。每一节都是一个文件夹，而不是一个孤立 notebook。
+这里是课程模板。学习时不要直接改这里的 notebook，先复制到本地工作区：
 
-第一入口：[START_HERE.ipynb](./START_HERE.ipynb)
+```bash
+cd micrograd
+python3 sync_personal.py
+```
 
-这个入口假设学习者不懂 LLM、不懂 PyTorch、不懂完整深度学习，只先跑通一条主链：
+然后打开：
+
+```text
+personal/course/START_HERE.ipynb
+```
+
+模板入口是 [START_HERE.ipynb](./START_HERE.ipynb)，用于查看和同步，不作为日常填写区。
+
+第一阶段只盯住一件事：
 
 ```text
 前向算 data -> loss 衡量错多少 -> backward 算 grad -> 按 -grad 更新参数 -> loss 下降
 ```
 
-每节固定包含：
+每节包含：
 
 ```text
 preview.ipynb    课前预习作业，先填 TODO，再跑 qa_check 暴露卡点
 class.ipynb      上课板书/实验，先跑代码，再拆概念
 homework.ipynb   正式作业，按理解台阶组织编号任务、测试、Debug Lab、项目题
-review_prompt.md AI 复盘检查 prompt
+review_prompt.md 学完后用来复盘
 ```
 
-课程设计标准：
+## 练习方式
+
+题不追求多，重点是每一步都能跑、能改、能检查。大多数作业会按这个顺序走：
 
 ```text
-材料/资料 -> 完整例子 -> 编号作业 -> 骨架/TODO -> 实现步骤 -> 测试
--> 调试/作业讲解 -> 下一题复用上一题 -> pro/结构课
-```
-
-## 设计理念
-
-题的数量不是目标，学生真的跨过理解障碍才是目标。
-
-这里的作业不是为了凑“很多题”，而是按下面的顺序搭桥：
-
-```text
-先暴露一个具体卡点
--> 用小数字例子跑通
+先跑一个小例子
 -> 改一个条件
--> 处理一个边界
--> 抽象成规则
--> 接回 micrograd 主线
--> 故意坏掉一次并修好
+-> 自己补 TODO
+-> 处理一个边界或反例
+-> 修一个常见错误
+-> 接回训练流程
 ```
 
-所以每节课验收的不是“做了几题”，而是：
+做完一节后，至少要能回答：
 
 ```text
-学生能不能说出这一题在练什么
-学生能不能把上一题的做法迁移到下一题
-学生能不能通过测试知道自己错在哪里
-学生能不能把局部知识接回 loss / grad / backward / update 主链路
+这题在练什么？
+上一个例子的做法，哪里被复用了？
+如果 qa_check 失败，错在数学、Python、计算图，还是训练循环？
+这一节怎么接回 loss / grad / backward / update？
 ```
 
 ## Lessons
@@ -78,6 +79,18 @@ python3 -m venv .venv
 
 然后在 Jupyter 里选择 `micrograd-course` kernel。
 
+开始学习前同步到个人工作区：
+
+```bash
+python3 sync_personal.py
+```
+
+默认不会覆盖已经写过的 `personal/course` 文件。需要重置某一节时再显式使用：
+
+```bash
+python3 sync_personal.py --lesson 08_pytorch_bridge --force
+```
+
 ## Pass Criteria
 
 ```text
@@ -93,8 +106,21 @@ Debug Lab 必须覆盖本节最容易犯的真实错误
 
 ```bash
 python3 course/audit_course.py
+python3 course/smoke_solutions.py
 ```
 
-旧的 v1 quick labs 已退休并删除；这个 `course/` 是当前 full course 设计入口。
+脚本通过不代表课程就没问题。每次改完材料，都要像学生一样亲自读对应的 `preview.ipynb`、`class.ipynb`、`homework.ipynb` 和 `review_prompt.md`：
+
+```text
+题目说明是否看得懂？
+TODO 是否知道要填什么？
+提示是否真的能救人？
+答案是否只在展开后出现？
+这一节能不能顺着读下来，而不是只靠检查器猜答案？
+```
+
+脚本只负责挡住格式错误、旧输出、检查器回退和明显坏味道。课程有没有教会人，必须靠人读。
+
+旧的 v1 quick labs 已退休并删除；现在从 `course/` 同步到 `personal/course/` 后再学习。
 
 更多设计原则见 [DESIGN_PHILOSOPHY.md](./DESIGN_PHILOSOPHY.md)。
