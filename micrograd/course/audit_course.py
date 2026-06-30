@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
@@ -186,6 +187,50 @@ def audit_visual_feedback() -> list[str]:
     return errors
 
 
+def audit_no_low_value_prompts() -> list[str]:
+    """Block answer-token exercises from creeping back into notebooks."""
+
+    errors: list[str] = []
+    patterns = [
+        re.compile(r"填.{0,12}字符串"),
+        re.compile(r"填一句中文"),
+        re.compile(r"固定字符串"),
+        re.compile(r"期望填"),
+        re.compile(r"答案需要满足"),
+        re.compile(r"概念映射"),
+    ]
+    for path in course_notebooks():
+        source = notebook_source(path)
+        for pattern in patterns:
+            match = pattern.search(source)
+            if match:
+                errors.append(
+                    f"{path.relative_to(ROOT)}: low-value prompt remains {match.group(0)!r}"
+                )
+                break
+    return errors
+
+
+def audit_checks_feedback_architecture() -> list[str]:
+    """Keep checks.py as behavior feedback, not hidden answer-string exec."""
+
+    errors: list[str] = []
+    text = (COURSE / "checks.py").read_text(encoding="utf-8")
+    forbidden = [
+        "_CHECKS",
+        "exec(_CHECKS",
+        "student_value_to_torch",
+        "student_zero_grad_reason",
+        "student_fixed_update_line = None",
+    ]
+    for fragment in forbidden:
+        if fragment in text:
+            errors.append(f"course/checks.py: forbidden rigid-check fragment {fragment!r}")
+    if "@check(" not in text:
+        errors.append("course/checks.py: missing registered behavior checks")
+    return errors
+
+
 REVIEW_REQUIRED_KEYWORDS = {
     "00_math_bootcamp": ["导数", "偏导", "梯度", "链式法则", "ReLU"],
     "01_gradient_homework": ["局部导数", "多路径", "L=a*a", "ReLU"],
@@ -326,6 +371,8 @@ def main() -> int:
         "homework_ladder_order": audit_homework_ladder_order(),
         "contextual_hints": audit_contextual_hints(),
         "visual_feedback": audit_visual_feedback(),
+        "low_value_prompts": audit_no_low_value_prompts(),
+        "checks_feedback_architecture": audit_checks_feedback_architecture(),
         "review_prompts": audit_review_prompts(),
         "class_shape": audit_class_shape(),
         "class_depth": audit_class_depth(),
