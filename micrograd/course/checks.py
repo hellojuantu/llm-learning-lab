@@ -71,13 +71,6 @@ def _run(fn: Callable[..., Any], *args: Any) -> Any:
     return result
 
 
-def _as_dict(result: Any) -> dict[str, Any] | None:
-    if isinstance(result, Mapping):
-        return dict(result)
-    print("请返回一个 dict，这样每个中间结果都能被检查。")
-    return None
-
-
 def _as_tuple(result: Any, length: int) -> tuple[Any, ...] | None:
     if isinstance(result, (list, tuple)) and len(result) == length:
         return tuple(result)
@@ -87,11 +80,6 @@ def _as_tuple(result: Any, length: int) -> tuple[Any, ...] | None:
 
 def _assert_close(actual: Any, expected: Any, name: str, eps: float = 1e-6) -> None:
     assert near(actual, expected, eps), f"{name}: expected {expected}, got {actual}"
-
-
-def _require_keys(data: Mapping[str, Any], keys: Iterable[str]) -> None:
-    missing = [key for key in keys if key not in data]
-    assert not missing, f"返回结果缺少 key: {missing}"
 
 
 def _value_class(ns: dict[str, Any]):
@@ -124,13 +112,13 @@ def qa_check_start_here(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_value_observation")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 3)
+    if result is None:
         return
-    _require_keys(data, ["data_before", "grad_before", "grad_after"])
-    _assert_close(data["data_before"], 6.0, "y.data")
-    _assert_close(data["grad_before"], 0.0, "x.grad before backward")
-    _assert_close(data["grad_after"], 3.0, "x.grad after backward")
+    data_before, grad_before, grad_after = result
+    _assert_close(data_before, 6.0, "y.data")
+    _assert_close(grad_before, 0.0, "x.grad before backward")
+    _assert_close(grad_after, 3.0, "x.grad after backward")
     print("OK: 你已经用运行结果区分了 data 和 grad。")
 
 
@@ -351,11 +339,11 @@ def qa_check_repeat_backward(ns: dict[str, Any]) -> None:
     print("OK: 你跑出了重复 backward 的累加问题。")
 
 
-def _check_add_probe_dict(data: dict[str, Any]) -> None:
-    _require_keys(data, ["out_data", "out_op", "a_is_parent", "b_is_parent"])
-    _assert_close(data["out_data"], 5, "out.data")
-    assert data["out_op"] == "+", f"out._op 应该是 '+', got {data['out_op']!r}"
-    assert data["a_is_parent"] is True and data["b_is_parent"] is True, "a/b 都应该在 out._prev 里。"
+def _check_add_probe_tuple(result: tuple[Any, ...]) -> None:
+    out_data, out_op, a_is_parent, b_is_parent = result
+    _assert_close(out_data, 5, "out.data")
+    assert out_op == "+", f"out._op 应该是 '+', got {out_op!r}"
+    assert a_is_parent is True and b_is_parent is True, "a/b 都应该在 out._prev 里。"
 
 
 @check("qa_check_preview_03")
@@ -369,10 +357,10 @@ def qa_check_preview_03(ns: dict[str, Any], fn: Callable[[], Any] | None = None,
     fn = fn or _student_fn(ns, "student_add_object_probe")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 4)
+    if result is None:
         return
-    _check_add_probe_dict(data)
+    _check_add_probe_tuple(result)
     print("OK: 你用对象状态看清了 a+b 的 out/_prev/_op。")
 
 
@@ -381,10 +369,10 @@ def qa_check_class_03_predict(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_add_object_probe")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 4)
+    if result is None:
         return
-    _check_add_probe_dict(data)
+    _check_add_probe_tuple(result)
     print("OK: self/other/out 已经用运行结果代清楚了。")
 
 
@@ -393,13 +381,13 @@ def qa_check_class_03_modify(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_mul_wrap_probe")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 3)
+    if result is None:
         return
-    _require_keys(data, ["out_data", "out_op", "parent_count"])
-    _assert_close(data["out_data"], 6, "out.data")
-    assert data["out_op"] == "*", f"out._op 应该是 '*', got {data['out_op']!r}"
-    assert data["parent_count"] == 2, "a*3 包装后也应该有两个父节点。"
+    out_data, out_op, parent_count = result
+    _assert_close(out_data, 6, "out.data")
+    assert out_op == "*", f"out._op 应该是 '*', got {out_op!r}"
+    assert parent_count == 2, "a*3 包装后也应该有两个父节点。"
     print("OK: 普通数字包装成 Value 的逻辑通过。")
 
 
@@ -407,13 +395,13 @@ def qa_check_class_03_modify(ns: dict[str, Any]) -> None:
 def qa_check_03_modify(ns: dict[str, Any]) -> None:
     fn = ns.get("student_mul_probe")
     if callable(fn):
-        data = _as_dict(_run(fn))
-        if data is None:
+        result = _as_tuple(_run(fn), 3)
+        if result is None:
             return
-        _require_keys(data, ["out_data", "out_op", "parent_count"])
-        _assert_close(data["out_data"], 6, "out.data")
-        assert data["out_op"] == "*"
-        assert data["parent_count"] == 2
+        out_data, out_op, parent_count = result
+        _assert_close(out_data, 6, "out.data")
+        assert out_op == "*"
+        assert parent_count == 2
         print("OK: Modify 通过。")
         return
     values = [
@@ -436,16 +424,21 @@ def qa_check_source_reading_basic(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_add_probe")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 2)
+    if result is None:
         return
-    _require_keys(data, ["c_data", "c_op", "c_prev_count", "d_data", "d_op", "d_prev_count"])
-    _assert_close(data["c_data"], 5, "c.data")
-    assert data["c_op"] == "+"
-    assert data["c_prev_count"] == 2
-    _assert_close(data["d_data"], 5, "d.data")
-    assert data["d_op"] == "+"
-    assert data["d_prev_count"] == 2
+    value_probe = _as_tuple(result[0], 3)
+    number_probe = _as_tuple(result[1], 3)
+    if value_probe is None or number_probe is None:
+        return
+    c_data, c_op, c_prev_count = value_probe
+    d_data, d_op, d_prev_count = number_probe
+    _assert_close(c_data, 5, "c.data")
+    assert c_op == "+"
+    assert c_prev_count == 2
+    _assert_close(d_data, 5, "d.data")
+    assert d_op == "+"
+    assert d_prev_count == 2
     print("OK: __add__ 保存的前向状态通过。")
 
 
@@ -454,12 +447,12 @@ def qa_check_source_reading_backward(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_backward_probe")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 2)
+    if result is None:
         return
-    _require_keys(data, ["a_grad", "L_grad"])
-    _assert_close(data["a_grad"], 2, "a.grad for L=a+a")
-    _assert_close(data["L_grad"], 1, "L.grad")
+    a_grad, L_grad = result
+    _assert_close(a_grad, 2, "a.grad for L=a+a")
+    _assert_close(L_grad, 1, "L.grad")
     print("OK: backward 核心语义通过。")
 
 
@@ -498,13 +491,20 @@ def qa_check_class_04_predict(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_minivalue_state")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 2)
+    if result is None:
         return
-    _require_keys(data, ["data", "grad", "_prev", "_op", "_backward"])
-    _assert_close(data["data"], 2.0, "data")
-    _assert_close(data["grad"], 0.0, "grad")
-    assert callable(data["_backward"]), "_backward 应该是可调用函数。"
+    number_state = _as_tuple(result[0], 2)
+    graph_state = _as_tuple(result[1], 3)
+    if number_state is None or graph_state is None:
+        return
+    data, grad = number_state
+    _prev, _op, _backward = graph_state
+    _assert_close(data, 2.0, "data")
+    _assert_close(grad, 0.0, "grad")
+    assert isinstance(_prev, set), "_prev 应该是 set。"
+    assert _op == "", "_op 初始应该是空字符串。"
+    assert callable(_backward), "_backward 应该是可调用函数。"
     print("OK: Value 最小状态通过。")
 
 
@@ -650,13 +650,13 @@ def qa_check_bias_debug(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_layer_bias_probe")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 3)
+    if result is None:
         return
-    _require_keys(data, ["neuron_count", "bias_count", "total_params"])
-    assert data["neuron_count"] == 3
-    assert data["bias_count"] == 3
-    assert data["total_params"] == 9
+    neuron_count, bias_count, total_params = result
+    assert neuron_count == 3
+    assert bias_count == 3
+    assert total_params == 9
     print("OK: bias 是每个神经元一个，你用真实 Layer 数出来了。")
 
 
@@ -855,12 +855,19 @@ def qa_check_08_mapping(ns: dict[str, Any], fn: Callable[[], Any] | None = None)
     fn = fn or _student_fn(ns, "student_compare_micrograd_torch")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 2)
+    if result is None:
         return
-    _require_keys(data, ["micrograd_grad", "torch_grad", "micrograd_updated_w", "torch_updated_w"])
-    for key, expected in [("micrograd_grad", -6.0), ("torch_grad", -6.0), ("micrograd_updated_w", 2.6), ("torch_updated_w", 2.6)]:
-        _assert_close(data[key], expected, key, 1e-5)
+    micrograd_result = _as_tuple(result[0], 2)
+    torch_result = _as_tuple(result[1], 2)
+    if micrograd_result is None or torch_result is None:
+        return
+    micrograd_grad, micrograd_updated_w = micrograd_result
+    torch_grad, torch_updated_w = torch_result
+    _assert_close(micrograd_grad, -6.0, "micrograd grad", 1e-5)
+    _assert_close(torch_grad, -6.0, "torch grad", 1e-5)
+    _assert_close(micrograd_updated_w, 2.6, "micrograd updated w", 1e-5)
+    _assert_close(torch_updated_w, 2.6, "torch updated w", 1e-5)
     print("OK: micrograd 和 PyTorch 在同一个小例子上对齐了。")
 
 
@@ -881,13 +888,13 @@ def qa_check_08_debug(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_torch_update_and_batch_demo")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 3)
+    if result is None:
         return
-    _require_keys(data, ["updated_w", "batch_shape", "batch_times_two"])
-    _assert_close(data["updated_w"], 2.6, "updated w", 1e-5)
-    assert tuple(data["batch_shape"]) == (3,), f"batch shape should be (3,), got {data['batch_shape']}"
-    assert [float(x) for x in data["batch_times_two"]] == [2.0, 4.0, 6.0]
+    updated_w, batch_shape, batch_times_two = result
+    _assert_close(updated_w, 2.6, "updated w", 1e-5)
+    assert tuple(batch_shape) == (3,), f"batch shape should be (3,), got {batch_shape}"
+    assert [float(x) for x in batch_times_two] == [2.0, 4.0, 6.0]
     print("OK: no_grad 更新和 Tensor 批量能力都跑出来了。")
 
 
@@ -949,19 +956,19 @@ def qa_check_debug_mapping(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_debug_symptom_probe")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 5)
+    if result is None:
         return
-    expected = {
-        "grad_twice_without_zero": 6,
-        "wrong_direction_w": 5.8,
-        "fixed_direction_w": 4.2,
-        "dead_relu_grad": 0,
-        "unchanged_delta": 0,
-    }
-    _require_keys(data, expected)
-    for key, expected_value in expected.items():
-        _assert_close(data[key], expected_value, key)
+    expected = [6, 5.8, 4.2, 0, 0]
+    names = [
+        "grad twice without zero",
+        "wrong direction w",
+        "fixed direction w",
+        "dead relu grad",
+        "unchanged delta",
+    ]
+    for actual, expected_value, name in zip(result, expected, names):
+        _assert_close(actual, expected_value, name)
     print("OK: Debug 症状映射通过。")
 
 
@@ -1072,12 +1079,12 @@ def qa_check_10_debug(ns: dict[str, Any]) -> None:
 @check("qa_check_preview_11")
 def qa_check_preview_11(ns: dict[str, Any], probe: Any, nn: Any = None) -> None:
     if callable(probe):
-        data = _as_dict(_run(probe))
-        if data is None:
+        result = _as_tuple(_run(probe), 2)
+        if result is None:
             return
-        _require_keys(data, ["engine_has_value", "nn_has_mlp"])
-        assert data["engine_has_value"] is True
-        assert data["nn_has_mlp"] is True
+        engine_has_value, nn_has_mlp = result
+        assert engine_has_value is True
+        assert nn_has_mlp is True
         print("OK: 项目结构入口通过。")
         return
     if not todo_guard([probe, nn]):
@@ -1091,13 +1098,13 @@ def qa_check_preview_11(ns: dict[str, Any], probe: Any, nn: Any = None) -> None:
 def qa_check_class_11_predict(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_structure_probe")
     if fn is not None:
-        data = _as_dict(_run(fn))
-        if data is None:
+        result = _as_tuple(_run(fn), 3)
+        if result is None:
             return
-        _require_keys(data, ["engine_has_value", "nn_has_neuron", "nn_has_mlp"])
-        assert data["engine_has_value"] is True
-        assert data["nn_has_neuron"] is True
-        assert data["nn_has_mlp"] is True
+        engine_has_value, nn_has_neuron, nn_has_mlp = result
+        assert engine_has_value is True
+        assert nn_has_neuron is True
+        assert nn_has_mlp is True
         print("OK: 文件职责预测通过。")
         return
     engine = ns.get("student_engine_role")
@@ -1120,13 +1127,9 @@ def qa_check_class_11_modify(ns: dict[str, Any]) -> None:
     result = _run(fn)
     if result is None:
         return
-    if isinstance(result, Mapping):
-        data = dict(result)
-        values = [data.get("loss"), data.get("grad"), data.get("updated_w")]
-    else:
-        values = list(result) if isinstance(result, (list, tuple)) else None
+    values = list(result) if isinstance(result, (list, tuple)) else None
     if values is None:
-        print("请返回 loss/grad/updated_w，或返回两个更新后的 w。")
+        print("请按题目说明 return loss, grad, updated_w，或 return manual_updated_w, optimizer_updated_w。")
         return
     if len(values) == 3:
         _assert_close(values[0], 1.0, "loss", 1e-5)
@@ -1145,13 +1148,13 @@ def qa_check_11_file_roles(ns: dict[str, Any], fn: Callable[[], Any] | None = No
     fn = fn or _student_fn(ns, "student_inspect_micrograd_files")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 3)
+    if result is None:
         return
-    _require_keys(data, ["engine_has_value", "nn_has_mlp", "demo_exists"])
-    assert data["engine_has_value"] is True
-    assert data["nn_has_mlp"] is True
-    assert data["demo_exists"] is True
+    engine_has_value, nn_has_mlp, demo_exists = result
+    assert engine_has_value is True
+    assert nn_has_mlp is True
+    assert demo_exists is True
     print("OK: 你通过项目结构定位了 engine/nn/demo。")
 
 
@@ -1163,12 +1166,19 @@ def qa_check_11_torch_mapping(ns: dict[str, Any], fn: Callable[[], Any] | None =
     fn = fn or _student_fn(ns, "student_torch_bridge_probe")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 2)
+    if result is None:
         return
-    _require_keys(data, ["micrograd_grad", "torch_grad", "micrograd_updated_w", "torch_updated_w"])
-    for key, expected in [("micrograd_grad", -6), ("torch_grad", -6), ("micrograd_updated_w", 2.6), ("torch_updated_w", 2.6)]:
-        _assert_close(data[key], expected, key, 1e-5)
+    micrograd_result = _as_tuple(result[0], 2)
+    torch_result = _as_tuple(result[1], 2)
+    if micrograd_result is None or torch_result is None:
+        return
+    micrograd_grad, micrograd_updated_w = micrograd_result
+    torch_grad, torch_updated_w = torch_result
+    _assert_close(micrograd_grad, -6, "micrograd grad", 1e-5)
+    _assert_close(torch_grad, -6, "torch grad", 1e-5)
+    _assert_close(micrograd_updated_w, 2.6, "micrograd updated w", 1e-5)
+    _assert_close(torch_updated_w, 2.6, "torch updated w", 1e-5)
     print("OK: PyTorch 映射通过。")
 
 
@@ -1195,13 +1205,13 @@ def qa_check_11_debug(ns: dict[str, Any]) -> None:
     fn = _student_fn(ns, "student_route_debug")
     if fn is None:
         return
-    data = _as_dict(_run(fn))
-    if data is None:
+    result = _as_tuple(_run(fn), 3)
+    if result is None:
         return
-    _require_keys(data, ["import_only_passes", "too_many_resources", "has_pass_questions"])
-    assert data["import_only_passes"] is False
-    assert data["too_many_resources"] is True
-    assert data["has_pass_questions"] is False
+    import_only_passes, too_many_resources, has_pass_questions = result
+    assert import_only_passes is False
+    assert too_many_resources is True
+    assert has_pass_questions is False
     print("OK: 路线 Debug Lab 通过。")
 
 

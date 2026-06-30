@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
@@ -200,7 +201,8 @@ def audit_no_low_value_prompts() -> list[str]:
         re.compile(r"概念映射"),
     ]
     for path in course_notebooks():
-        source = notebook_source(path)
+        nb = read_notebook(path)
+        source = "\n".join(cell_source(cell) for cell in nb.get("cells", []))
         for pattern in patterns:
             match = pattern.search(source)
             if match:
@@ -208,6 +210,12 @@ def audit_no_low_value_prompts() -> list[str]:
                     f"{path.relative_to(ROOT)}: low-value prompt remains {match.group(0)!r}"
                 )
                 break
+        for index, cell in enumerate(nb.get("cells", []), start=1):
+            cell_text = cell_source(cell)
+            if "def student_" in cell_text and "return {" in cell_text:
+                errors.append(
+                    f"{path.relative_to(ROOT)}: cell {index} uses student return dict instead of stepped returns"
+                )
     return errors
 
 
@@ -222,6 +230,10 @@ def audit_checks_feedback_architecture() -> list[str]:
         "student_value_to_torch",
         "student_zero_grad_reason",
         "student_fixed_update_line = None",
+        "_as_dict",
+        "_require_keys",
+        "请返回一个 dict",
+        "返回结果缺少 key",
     ]
     for fragment in forbidden:
         if fragment in text:
@@ -309,6 +321,15 @@ def audit_no_checkpoints() -> list[str]:
     return errors
 
 
+def cleanup_generated_artifacts() -> None:
+    for generated in COURSE.glob("*/*.svg"):
+        generated.unlink()
+    for pycache in COURSE.rglob("__pycache__"):
+        shutil.rmtree(pycache)
+    for checkpoint in COURSE.rglob(".ipynb_checkpoints"):
+        shutil.rmtree(checkpoint)
+
+
 def audit_notebook_json() -> list[str]:
     errors: list[str] = []
     for path in course_notebooks():
@@ -352,16 +373,12 @@ def audit_blank_execution() -> list[str]:
         os.environ.pop("MPLBACKEND", None)
     else:
         os.environ["MPLBACKEND"] = old_backend
-    for generated in COURSE.glob("*/*.svg"):
-        generated.unlink()
-    for pycache in COURSE.rglob("__pycache__"):
-        for child in pycache.iterdir():
-            child.unlink()
-        pycache.rmdir()
+    cleanup_generated_artifacts()
     return errors
 
 
 def main() -> int:
+    cleanup_generated_artifacts()
     checks = {
         "structure": audit_structure(),
         "notebook_json": audit_notebook_json(),
